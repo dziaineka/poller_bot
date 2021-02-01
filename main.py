@@ -1,6 +1,8 @@
 import asyncio
+import functools
 import logging
 from datetime import datetime
+from typing import Callable
 
 import pytz
 from aiogram import Bot, Dispatcher, types
@@ -65,6 +67,18 @@ def get_today() -> str:
     return f'{day}.{month}.{year}'
 
 
+def safe(func: Callable):
+    @functools.wraps(func)
+    async def log_exception():
+        try:
+            await func()
+        except Exception:
+            logging.exception("Something went wrong.")
+
+    return log_exception
+
+
+@safe
 async def post_poll():
     question = f'{config.QUESTION} ({get_today()})'
 
@@ -81,6 +95,7 @@ async def post_poll():
     last_channel_poll = poll.message_id
 
 
+@safe
 async def repeat_poll():
     global last_channel_poll
 
@@ -91,7 +106,7 @@ async def repeat_poll():
                                   disable_notification=False)
 
 
-async def startup(dispatcher: Dispatcher):
+async def startup(_):
     schdlr = Scheduler(post_poll, repeat_poll)
     asyncio.create_task(schdlr.start())
 
