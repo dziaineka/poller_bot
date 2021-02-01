@@ -3,6 +3,7 @@ import functools
 import logging
 from datetime import datetime
 from typing import Callable
+from aiogram.dispatcher.storage import FSMContext
 
 import pytz
 from aiogram import Bot, Dispatcher, types
@@ -36,6 +37,14 @@ async def welcome(message: types.Message):
     await bot.send_message(message.chat.id,
                            text,
                            reply_markup=keyboard)
+
+
+@dp.message_handler(commands=['force'])
+async def cmd_force_poll(message: types.Message, state: FSMContext):
+    logging.info('Forced polling - ' +
+                 f'{str(message.from_user.id)}:{message.from_user.username}')
+
+    await post_poll()
 
 
 @dp.message_handler(content_types=types.ContentTypes.POLL, state='*')
