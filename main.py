@@ -37,8 +37,22 @@ async def welcome(message: types.Message):
                            reply_markup=keyboard)
 
 
+@dp.message_handler(content_types=types.ContentTypes.POLL, state='*')
+async def set_message_to_repeat(message: types.Message):
+    if str(message.from_user.id) not in config.ADMINS:
+        return
+
+    global last_channel_poll
+    last_channel_poll = message.forward_from_message_id
+
+    text = "Этот опрос будет показан в следующий раз при повторе " \
+        "по расписанию."
+
+    await bot.send_message(message.chat.id, text)
+
+
 @dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
-async def empty_state(message: types.Message):
+async def any_message(message: types.Message):
     await welcome(message)
 
 

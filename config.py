@@ -9,6 +9,7 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 BOT_TOKEN = getenv('BOT_TOKEN')
+ADMINS = getenv('ADMINS').split(";;")
 CHANNEL_NAME = getenv('CHANNEL_NAME')
 GROUP_NAME = getenv('GROUP_NAME')
 QUESTION = getenv("QUESTION")
