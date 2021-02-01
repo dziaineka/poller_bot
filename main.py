@@ -20,9 +20,8 @@ last_channel_poll = None
 
 
 async def welcome(message: types.Message):
-    text = "Hello it's poller bot.\n\n" \
-        "It doesn't imply any interaction to you.\n\n" \
-        "Deploy your own copy if you want the same functionality."
+    text = "Привет, этот бот создает опрос по расписанию.\n\n" \
+        "Чтобы завести себе такого же, нужно поднять собственную копию бота."
 
     keyboard = types.InlineKeyboardMarkup(row_width=1)
 
