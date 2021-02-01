@@ -67,12 +67,11 @@ def get_today() -> str:
 
 
 async def post_poll():
-    answers = config.ANSWERS.split(";;")
     question = f'{config.QUESTION} ({get_today()})'
 
     poll = await bot.send_poll(chat_id=config.CHANNEL_NAME,
                                question=question,
-                               options=answers)
+                               options=config.ANSWERS)
 
     await bot.forward_message(chat_id=config.GROUP_NAME,
                               from_chat_id=config.CHANNEL_NAME,
