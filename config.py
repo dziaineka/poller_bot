@@ -10,8 +10,9 @@ load_dotenv(dotenv_path)
 
 BOT_TOKEN = getenv('BOT_TOKEN')
 CHANNEL_NAME = getenv('CHANNEL_NAME')
-CHAT_NAME = getenv('CHAT_NAME')
+GROUP_NAME = getenv('GROUP_NAME')
 QUESTION = getenv("QUESTION")
 ANSWERS = getenv("ANSWERS")
-POLLING_RATE = getenv("POLLING_RATE")
-POLLING_TIME = getenv("POLLING_TIME")
+NEW_POLL_TIME = getenv("NEW_POLL_TIME") or "2000"
+REPEAT_POLL_TIMES = getenv("REPEAT_POLL_TIMES") or ""
+TIMEZONE = getenv("TIMEZONE") or 'Europe/Minsk'
