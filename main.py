@@ -63,6 +63,9 @@ async def set_message_to_repeat(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
 async def any_message(message: types.Message):
+    if message.chat.username == config.GROUP_NAME.removeprefix('@'):
+        return
+
     await welcome(message)
 
 
