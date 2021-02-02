@@ -1,6 +1,7 @@
 import asyncio
 import functools
 import logging
+import sys
 from datetime import datetime
 from typing import Callable
 from aiogram.dispatcher.storage import FSMContext
@@ -13,7 +14,12 @@ from aiogram.utils import executor
 import config
 from scheduler import Scheduler
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    stream=sys.stdout,
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+logger = logging.getLogger("parkun_bot")
 
 bot = Bot(token=config.BOT_TOKEN)
 
@@ -41,7 +47,7 @@ async def welcome(message: types.Message):
 
 @dp.message_handler(commands=['force'])
 async def cmd_force_poll(message: types.Message, state: FSMContext):
-    logging.info('Forced polling - ' +
+    logger.info('Forced polling - ' +
                  f'{str(message.from_user.id)}:{message.from_user.username}')
 
     await post_poll()
@@ -85,7 +91,7 @@ def safe(func: Callable):
         try:
             await func()
         except Exception:
-            logging.exception("Something went wrong.")
+            logger.exception("Something went wrong.")
 
     return log_exception
 
