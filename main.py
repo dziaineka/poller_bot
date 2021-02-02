@@ -4,15 +4,15 @@ import logging
 import sys
 from datetime import datetime
 from typing import Callable
-from aiogram.dispatcher.storage import FSMContext
 
+import aioschedule as schedule
 import pytz
 from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
+from aiogram.dispatcher.storage import FSMContext
 from aiogram.utils import executor
 
 import config
-from scheduler import Scheduler
 
 logging.basicConfig(
     stream=sys.stdout,
@@ -48,7 +48,7 @@ async def welcome(message: types.Message):
 @dp.message_handler(commands=['force'])
 async def cmd_force_poll(message: types.Message, state: FSMContext):
     logger.info('Forced polling - ' +
-                 f'{str(message.from_user.id)}:{message.from_user.username}')
+                f'{str(message.from_user.id)}:{message.from_user.username}')
 
     await post_poll()
 
@@ -124,9 +124,22 @@ async def repeat_poll():
                                   disable_notification=False)
 
 
+async def start_scheduler(post_poll: Callable, repeat_poll: Callable):
+    logger.info('Scheduler started')
+
+    for action_time in config.NEW_POLL_TIMES:
+        schedule.every().day.at(action_time).do(post_poll)
+
+    for repeat_time in config.REPEAT_POLL_TIMES:
+        schedule.every().day.at(repeat_time).do(repeat_poll)
+
+    while True:
+        await schedule.run_pending()
+        await asyncio.sleep(0.1)
+
+
 async def startup(_):
-    schdlr = Scheduler(post_poll, repeat_poll)
-    asyncio.create_task(schdlr.start())
+    asyncio.create_task(start_scheduler(post_poll, repeat_poll))
 
 
 if __name__ == '__main__':
