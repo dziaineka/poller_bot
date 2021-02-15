@@ -3,7 +3,7 @@ import functools
 import logging
 import sys
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Optional
 
 import aioschedule as schedule
 import pytz
@@ -25,7 +25,8 @@ bot = Bot(token=config.BOT_TOKEN)
 
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-last_channel_poll = None
+last_channel_poll: Optional[int] = None
+messages_after_last_poll_counter = 0
 
 
 async def welcome(message: types.Message):
@@ -70,6 +71,8 @@ async def set_message_to_repeat(message: types.Message):
 @dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
 async def any_message(message: types.Message):
     if message.chat.username == config.GROUP_NAME.removeprefix('@'):
+        global messages_after_last_poll_counter
+        messages_after_last_poll_counter += 1
         return
 
     await welcome(message)
@@ -112,16 +115,26 @@ async def post_poll():
     global last_channel_poll
     last_channel_poll = poll.message_id
 
+    global messages_after_last_poll_counter
+    messages_after_last_poll_counter = 0
+
 
 @safe
 async def repeat_poll():
     global last_channel_poll
+    global messages_after_last_poll_counter
 
-    if last_channel_poll:
+    forwarding_allowed = \
+        messages_after_last_poll_counter >= \
+        config.GROUP_MESSAGES_COUNT_THRESHOLD
+
+    if last_channel_poll and forwarding_allowed:
         await bot.forward_message(chat_id=config.GROUP_NAME,
                                   from_chat_id=config.CHANNEL_NAME,
                                   message_id=last_channel_poll,
                                   disable_notification=False)
+
+        messages_after_last_poll_counter = 0
 
 
 async def start_scheduler(post_poll: Callable, repeat_poll: Callable):

@@ -17,3 +17,8 @@ ANSWERS = getenv("ANSWERS").split(";;")
 NEW_POLL_TIMES = getenv("NEW_POLL_TIMES").split(";;")
 REPEAT_POLL_TIMES = getenv("REPEAT_POLL_TIMES").split(";;")
 TIMEZONE = getenv("TIMEZONE") or 'Europe/Minsk'
+
+# Amount of messages in group after previous poll which make bot to be
+# allowed to forward poll again
+GROUP_MESSAGES_COUNT_THRESHOLD = \
+    int(getenv("GROUP_MESSAGES_COUNT_THRESHOLD") or 5)
