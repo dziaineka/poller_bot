@@ -9,13 +9,23 @@ dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 
 BOT_TOKEN = getenv('BOT_TOKEN')
+
+# Users who can send commands to bot (e.g. /force) and do other interaction
 ADMINS = getenv('ADMINS').split(";;")
+
 CHANNEL_NAME = getenv('CHANNEL_NAME')
 GROUP_NAME = getenv('GROUP_NAME')
+
 QUESTION = getenv("QUESTION")
 ANSWERS = getenv("ANSWERS").split(";;")
+
+# Times to post new poll (UTC)
 NEW_POLL_TIMES = getenv("NEW_POLL_TIMES").split(";;")
+
+# Times to repeat poll which was postes according to previous setting (UTC)
 REPEAT_POLL_TIMES = getenv("REPEAT_POLL_TIMES").split(";;")
+
+# Timezone name for bot to determine date for poll title.
 TIMEZONE = getenv("TIMEZONE") or 'Europe/Minsk'
 
 # Amount of messages in group after previous poll which make bot to be
