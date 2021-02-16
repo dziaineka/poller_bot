@@ -25,8 +25,7 @@ bot = Bot(token=config.BOT_TOKEN)
 
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
-last_channel_poll: Optional[int] = None
-messages_after_last_poll_counter = 0
+messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
 async def welcome(message: types.Message):
@@ -59,11 +58,8 @@ async def set_message_to_repeat(message: types.Message):
     if str(message.from_user.id) not in config.ADMINS:
         return
 
-    global last_channel_poll
-    last_channel_poll = message.forward_from_message_id
-
-    text = "Этот опрос будет показан в следующий раз при повторе " \
-        "по расписанию."
+    text = f"Чтобы этот пост был показан в следующий раз по расписанию " \
+        f"нужно запинить его в канале {config.CHANNEL_NAME}."
 
     await bot.send_message(message.chat.id, text)
 
@@ -103,25 +99,53 @@ def safe(func: Callable):
 async def post_poll():
     question = f'{config.QUESTION} ({get_today()})'
 
+    await maybe_unpin_previous_poll()
+
     poll = await bot.send_poll(chat_id=config.CHANNEL_NAME,
                                question=question,
-                               options=config.ANSWERS)
+                               options=config.ANSWERS,
+                               disable_notification=True)
+
+    await bot.pin_chat_message(chat_id=config.CHANNEL_NAME,
+                               message_id=poll.message_id,
+                               disable_notification=True)
+
+    # delete info message about pin action
+    await bot.delete_message(chat_id=config.CHANNEL_NAME,
+                             message_id=poll.message_id+1)
 
     await bot.forward_message(chat_id=config.GROUP_NAME,
                               from_chat_id=config.CHANNEL_NAME,
                               message_id=poll.message_id,
                               disable_notification=False)
 
-    global last_channel_poll
-    last_channel_poll = poll.message_id
-
     global messages_after_last_poll_counter
     messages_after_last_poll_counter = 0
 
 
+async def maybe_unpin_previous_poll():
+    last_channel_poll = await get_last_channel_post()
+
+    try:
+        await bot.unpin_chat_message(chat_id=config.CHANNEL_NAME,
+                                     message_id=last_channel_poll)
+    except Exception:
+        logger.exception("Unpin failed this time.")
+
+
 @safe
 async def repeat_poll():
-    global last_channel_poll
+    last_channel_poll = await get_last_channel_post()
+
+    if not last_channel_poll:
+        text = f"Не смог найти в канале {config.CHANNEL_NAME} запиненное " \
+            "сообщение, чтобы отфорвардить 🤷‍♂️"
+
+        for admin in config.ADMINS:
+            await bot.send_message(admin, text)
+
+        return
+
     global messages_after_last_poll_counter
 
     forwarding_allowed = \
@@ -135,6 +159,15 @@ async def repeat_poll():
                                   disable_notification=False)
 
         messages_after_last_poll_counter = 0
+
+
+async def get_last_channel_post() -> Optional[int]:
+    chat_info = await bot.get_chat(config.CHANNEL_NAME)
+
+    if chat_info.pinned_message:
+        return chat_info.pinned_message.message_id
+
+    return None
 
 
 async def start_scheduler(post_poll: Callable, repeat_poll: Callable):
