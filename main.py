@@ -25,6 +25,9 @@ bot = Bot(token=config.BOT_TOKEN)
 
 storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
+
+# Allow bot to forward poll without counting threshold
+# (becouse counter resets at restart)
 messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
