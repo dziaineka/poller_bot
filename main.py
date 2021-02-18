@@ -72,9 +72,14 @@ async def set_message_to_repeat(message: types.Message):
 
 @dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
 async def any_message(message: types.Message):
+    logger.debug(f"Message from chat {message.chat.username}")
+
     if message.chat.username == config.GROUP_NAME.removeprefix('@'):
         global messages_after_last_poll_counter
         messages_after_last_poll_counter += 1
+
+        logger.debug("Counter updated to "
+                     f"{str(messages_after_last_poll_counter)}")
         return
 
     await welcome(message)
@@ -167,7 +172,7 @@ async def repeat_poll():
         config.GROUP_MESSAGES_COUNT_THRESHOLD
 
     logger.debug(f"Try to forward. Id - {last_channel_poll}. "
-                 "Threshold - {messages_after_last_poll_counter}")
+                 f"Threshold - {messages_after_last_poll_counter}")
 
     if last_channel_poll and forwarding_allowed:
         await bot.forward_message(chat_id=config.GROUP_NAME,
