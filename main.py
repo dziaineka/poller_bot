@@ -16,7 +16,7 @@ import config
 
 logging.basicConfig(
     stream=sys.stdout,
-    level=logging.INFO,
+    level=config.LOGGING_LEVEL,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger("parkun_bot")
@@ -32,6 +32,9 @@ messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
 async def welcome(message: types.Message):
+    logger.info('Welcome - ' +
+                f'{str(message.from_user.id)}:{message.from_user.username}')
+
     text = "Привет, этот бот создает опрос по расписанию.\n\n" \
         "Чтобы завести себе такого же, нужно поднять собственную копию бота."
 
@@ -100,6 +103,7 @@ def safe(func: Callable):
 
 @safe
 async def post_poll():
+    logger.info("New poll time")
     question = f'{config.QUESTION} ({get_today()})'
 
     await maybe_unpin_previous_poll()
@@ -122,6 +126,8 @@ async def post_poll():
                               message_id=poll.message_id,
                               disable_notification=False)
 
+    logger.debug(f"New poll posted. Id - {poll.message_id}")
+
     global messages_after_last_poll_counter
     messages_after_last_poll_counter = 0
 
@@ -132,15 +138,20 @@ async def maybe_unpin_previous_poll():
     try:
         await bot.unpin_chat_message(chat_id=config.CHANNEL_NAME,
                                      message_id=last_channel_poll)
+
+        logger.debug(f"Post unpinned. Id - {last_channel_poll}")
     except Exception:
         logger.exception("Unpin failed this time.")
 
 
 @safe
 async def repeat_poll():
+    logger.info(f"Repeating poll")
     last_channel_poll = await get_last_channel_post()
 
     if not last_channel_poll:
+        logger.debug(f"Can't find pinned post. Id - {last_channel_poll}")
+
         text = f"Не смог найти в канале {config.CHANNEL_NAME} запиненное " \
             "сообщение, чтобы отфорвардить 🤷‍♂️"
 
@@ -155,6 +166,9 @@ async def repeat_poll():
         messages_after_last_poll_counter >= \
         config.GROUP_MESSAGES_COUNT_THRESHOLD
 
+    logger.debug(f"Try to forward. Id - {last_channel_poll}. "
+                 "Threshold - {messages_after_last_poll_counter}")
+
     if last_channel_poll and forwarding_allowed:
         await bot.forward_message(chat_id=config.GROUP_NAME,
                                   from_chat_id=config.CHANNEL_NAME,
@@ -162,6 +176,8 @@ async def repeat_poll():
                                   disable_notification=False)
 
         messages_after_last_poll_counter = 0
+
+        logger.debug(f"Post forwarded. Id - {last_channel_poll}")
 
 
 async def get_last_channel_post() -> Optional[int]:
