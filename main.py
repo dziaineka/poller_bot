@@ -51,6 +51,21 @@ async def welcome(message: types.Message):
                            reply_markup=keyboard)
 
 
+@dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
+async def any_message(message: types.Message):
+    logger.debug(f"Message from chat {message.chat.username}")
+
+    if message.chat.username == config.GROUP_NAME.removeprefix('@'):
+        global messages_after_last_poll_counter
+        messages_after_last_poll_counter += 1
+
+        logger.debug("Counter updated to "
+                     f"{str(messages_after_last_poll_counter)}")
+        return
+
+    await welcome(message)
+
+
 @dp.message_handler(commands=['force'])
 async def cmd_force_poll(message: types.Message, state: FSMContext):
     logger.info('Forced polling - ' +
@@ -68,21 +83,6 @@ async def set_message_to_repeat(message: types.Message):
         f"нужно запинить его в канале {config.CHANNEL_NAME}."
 
     await bot.send_message(message.chat.id, text)
-
-
-@dp.message_handler(content_types=types.ContentTypes.ANY, state='*')
-async def any_message(message: types.Message):
-    logger.debug(f"Message from chat {message.chat.username}")
-
-    if message.chat.username == config.GROUP_NAME.removeprefix('@'):
-        global messages_after_last_poll_counter
-        messages_after_last_poll_counter += 1
-
-        logger.debug("Counter updated to "
-                     f"{str(messages_after_last_poll_counter)}")
-        return
-
-    await welcome(message)
 
 
 def get_today() -> str:
