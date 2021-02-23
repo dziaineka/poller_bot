@@ -55,8 +55,8 @@ async def welcome(message: types.Message):
 async def cmd_force_poll(message: types.Message, state: FSMContext):
     logger.info('Forced polling - ' +
                 f'{str(message.from_user.id)}:{message.from_user.username}')
-
-    await post_poll()
+    if str(message.from_user.id) in config.ADMINS:
+        await post_poll()
 
 
 @dp.message_handler(content_types=types.ContentTypes.POLL, state='*')
