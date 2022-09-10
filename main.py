@@ -205,7 +205,7 @@ async def start_scheduler(post_poll: Callable, repeat_poll: Callable):
 
     while True:
         await schedule.run_pending()
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
 
 
 async def startup(_):
