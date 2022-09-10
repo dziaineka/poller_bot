@@ -31,6 +31,14 @@ dp = Dispatcher(bot, storage=storage)
 messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
+@dp.message_handler(commands=['force'])
+async def cmd_force_poll(message: types.Message):
+    logger.info('Forced polling - ' +
+                f'{str(message.from_user.id)}:{message.from_user.username}')
+    if str(message.from_user.id) in config.ADMINS:
+        await post_poll()
+
+
 async def welcome(message: types.Message):
     logger.info('Welcome - ' +
                 f'{str(message.from_user.id)}:{message.from_user.username}')
@@ -64,14 +72,6 @@ async def any_message(message: types.Message):
         return
 
     await welcome(message)
-
-
-@dp.message_handler(commands=['force'])
-async def cmd_force_poll(message: types.Message, state: FSMContext):
-    logger.info('Forced polling - ' +
-                f'{str(message.from_user.id)}:{message.from_user.username}')
-    if str(message.from_user.id) in config.ADMINS:
-        await post_poll()
 
 
 @dp.message_handler(content_types=types.ContentTypes.POLL, state='*')
