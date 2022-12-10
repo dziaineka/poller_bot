@@ -1,7 +1,7 @@
 import logging
 from os import getenv
 from os.path import dirname, join
-from typing import Optional
+from typing import List, Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -27,6 +27,21 @@ def get_logging_level(level: Optional[str]) -> int:
         return logging.INFO
 
 
+def parse_date(date: str) -> Tuple[int, int]:
+    (day, month) = date.split(".")
+    return (int(day), int(month))
+
+
+def get_post_dates() -> set[Tuple[int, int]]:
+    dates = getenv(
+        "STATS_POST_DATES",
+        "01.01;;01.02;;01.03;;01.04;;01.05;;01.06;;"
+        "01.07;;01.08;;01.09;;01.10;;01.11;;01.12",
+    ).split(";;")
+
+    return set(map(lambda date: parse_date(date), dates))
+
+
 # Create .env file path.
 dotenv_path = join(dirname(__file__), ".env")
 
@@ -34,6 +49,10 @@ dotenv_path = join(dirname(__file__), ".env")
 load_dotenv(dotenv_path)
 
 BOT_TOKEN = getenv("BOT_TOKEN", "")
+
+# needed for statistics posting
+TELEGRAM_API_ID = int(getenv("TELEGRAM_API_ID", 0))
+TELEGRAM_API_HASH = getenv("TELEGRAM_API_HASH", "")
 
 # Users who can send commands to bot (e.g. /force) and do other interaction
 ADMINS = getenv("ADMINS", "").split(";;")
@@ -60,3 +79,11 @@ GROUP_MESSAGES_COUNT_THRESHOLD = int(
 )
 
 LOGGING_LEVEL = get_logging_level(getenv("LOGGING_LEVEL"))
+
+STATS_ENABLED = bool(int(getenv("STATS_ENABLED", 0)))
+
+# Need to post stats checks once a day at a time determined below (UTC)
+STATS_CHECK_TIME = getenv("STATS_CHECK_TIME", "12:00")
+
+# What date should we post stats (UTC)
+STATS_POST_DATES = get_post_dates()

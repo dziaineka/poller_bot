@@ -11,6 +11,7 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from aiogram.dispatcher.storage import FSMContext
 from aiogram.utils import executor
+from stats import Stats
 
 import config
 
@@ -28,7 +29,7 @@ storage = MemoryStorage()
 dp = Dispatcher(bot, storage=storage)
 
 # Allow bot to forward poll without counting threshold
-# (becouse counter resets at restart)
+# (because counter resets at restart)
 messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
@@ -208,6 +209,16 @@ async def repeat_poll():
         logger.debug(f"Post forwarded. Id - {last_channel_poll}")
 
 
+@safe
+async def maybe_post_stats():
+    if Stats.time_to_post():
+        # We create Stats instance every time when post because posting
+        # stats is rare occasion (once a month by default)
+        # IMHO no need to keep underlying telegram client
+        # instance in memory all the time
+        await Stats().post(bot)
+
+
 async def get_last_channel_post() -> Optional[int]:
     chat_info = await bot.get_chat(config.CHANNEL_NAME)
 
@@ -217,7 +228,7 @@ async def get_last_channel_post() -> Optional[int]:
     return None
 
 
-async def start_scheduler(post_poll: Callable, repeat_poll: Callable):
+async def start_scheduler():
     logger.info("Scheduler started")
 
     for action_time in config.NEW_POLL_TIMES:
@@ -226,13 +237,16 @@ async def start_scheduler(post_poll: Callable, repeat_poll: Callable):
     for repeat_time in config.REPEAT_POLL_TIMES:
         schedule.every().day.at(repeat_time).do(repeat_poll)
 
+    if config.STATS_ENABLED:
+        schedule.every().day.at(config.STATS_CHECK_TIME).do(maybe_post_stats)
+
     while True:
         await schedule.run_pending()
         await asyncio.sleep(1)
 
 
 async def startup(_):
-    asyncio.create_task(start_scheduler(post_poll, repeat_poll))
+    asyncio.create_task(start_scheduler())
 
 
 if __name__ == "__main__":
