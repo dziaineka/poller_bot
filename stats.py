@@ -1,12 +1,15 @@
 import datetime
-import config
-from telethon import TelegramClient
-from telethon.tl import types as teletypes
-from scipy.signal import find_peaks
-import numpy as np
-import matplotlib.pyplot as plt
-from typing import List, Optional
 from collections import defaultdict
+from typing import List, Optional
+
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.signal import find_peaks
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+from telethon.tl import types as teletypes
+
+import config
 
 
 def get_option(
@@ -79,7 +82,9 @@ def get_empty_stats() -> dict:
 class Stats:
     def __init__(self) -> None:
         self.client = TelegramClient(
-            "stats", config.TELEGRAM_API_ID, config.TELEGRAM_API_HASH
+            StringSession(config.TELETHON_STRING_SESSION),
+            config.TELEGRAM_API_ID,
+            config.TELEGRAM_API_HASH,
         )
 
     @staticmethod
@@ -112,7 +117,7 @@ class Stats:
 
         for option in highest_indices:
             for idx in highest_indices[option]:
-                d = stats["Date"][idx]
+                d = stats["date"][idx]
                 d_str = "%s-%s" % (d.month, d.day)
                 v = 1.0 - averages[option][idx]
                 ax.annotate("z(%s): %.2f" % (d_str, v), xy=(d, v), fontsize=6)
@@ -124,8 +129,8 @@ class Stats:
         # plt.show()
 
         fig.clear()
-        avg_voters = get_avg(stats["Total"], window)
-        plt.plot(stats["Date"], avg_voters)
+        avg_voters = get_avg(stats["total"], window)
+        plt.plot(stats["date"], avg_voters)
         plt.savefig("total_voters.png", dpi=200)
 
     async def get_stats(self, offset_date) -> dict:

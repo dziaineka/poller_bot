@@ -50,9 +50,11 @@ load_dotenv(dotenv_path)
 
 BOT_TOKEN = getenv("BOT_TOKEN", "")
 
-# needed for statistics posting
+# needed for statistics posting. Get it from my.telegram.org
 TELEGRAM_API_ID = int(getenv("TELEGRAM_API_ID", 0))
 TELEGRAM_API_HASH = getenv("TELEGRAM_API_HASH", "")
+# get string session by running get_string_session.py
+TELETHON_STRING_SESSION = getenv("TELETHON_STRING_SESSION", "")
 
 # Users who can send commands to bot (e.g. /force) and do other interaction
 ADMINS = getenv("ADMINS", "").split(";;")
