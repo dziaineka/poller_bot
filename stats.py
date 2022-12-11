@@ -1,6 +1,7 @@
 import datetime
+import logging
 from collections import defaultdict
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -8,8 +9,11 @@ from scipy.signal import find_peaks
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl import types as teletypes
+import aiogram
 
 import config
+
+logger = logging.getLogger(__name__)
 
 
 def get_option(
@@ -93,13 +97,34 @@ class Stats:
         month = datetime.datetime.today().month
         return (day, month) in config.STATS_POST_DATES
 
-    async def post(self):
+    async def post(self, bot: aiogram.Bot):
+        logger.info("Time to post stats")
         year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
         stats = await self.get_stats(year_ago)
+        (main_graph_path, total_voters_graph_path) = self.create_graphs(stats)
 
+        with open(main_graph_path, "rb") as graph:
+            await bot.send_photo(
+                chat_id=config.GROUP_NAME,
+                photo=graph,
+                disable_notification=True,
+                caption="агульны графік"
+            )
+
+        with open(total_voters_graph_path, "rb") as graph:
+            await bot.send_photo(
+                chat_id=config.GROUP_NAME,
+                photo=graph,
+                disable_notification=True,
+                caption="колькасць галасуючых"
+            )
+
+    def create_graphs(self, stats: dict) -> Tuple[str, str]:
         averages = {}
         highest_indices = {}
         window = 3
+        main_graph_path = "zdrada.png"
+        total_voters_path = "total_voters.png"
 
         for answer in config.ANSWERS:
             average = get_avg(stats["options"]["option_ratio"][answer], window)
@@ -118,27 +143,32 @@ class Stats:
         for option in highest_indices:
             for idx in highest_indices[option]:
                 d = stats["date"][idx]
-                d_str = "%s-%s" % (d.month, d.day)
+                d_str = f"{d.month}-{d.day}"
                 v = 1.0 - averages[option][idx]
-                ax.annotate("z(%s): %.2f" % (d_str, v), xy=(d, v), fontsize=6)
+                ax.annotate(
+                    "%s(%s): %.2f" % (option[0], d_str, v),
+                    xy=(d, v),
+                    fontsize=6,
+                )
                 x_points.append(d)
                 y_points.append(v)
 
         plt.plot(x_points, y_points, "o", markersize=1)
-        plt.savefig("zrada.png", dpi=200)
-        # plt.show()
+        plt.savefig(main_graph_path, dpi=200)
 
         fig.clear()
         avg_voters = get_avg(stats["total"], window)
         plt.plot(stats["date"], avg_voters)
-        plt.savefig("total_voters.png", dpi=200)
+        plt.savefig(total_voters_path, dpi=200)
+
+        return main_graph_path, total_voters_path
 
     async def get_stats(self, offset_date) -> dict:
         stats = get_empty_stats()
 
         async with self.client:
             async for message in self.client.iter_messages(
-                config.CHANNEL_NAME, offset_date=offset_date
+                config.CHANNEL_NAME, offset_date=offset_date, reverse=True
             ):
                 poll = message.poll
 
