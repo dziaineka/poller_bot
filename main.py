@@ -35,10 +35,12 @@ messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 @dp.message_handler(commands=["stats"])
 async def cmd_post_stats(message: types.Message):
     logger.info(
-        "Post stats - "
+        "Post stats command - "
         + f"{str(message.from_user.id)}:{message.from_user.username}"
     )
-    await Stats().post(bot)
+    # https://github.com/LonamiWebs/Telethon/issues/1634#issuecomment-1280611854
+    tasks = []
+    tasks.append(asyncio.create_task(Stats().post(bot)))
 
 
 @dp.message_handler(commands=["force"])
