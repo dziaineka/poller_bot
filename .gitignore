@@ -130,3 +130,6 @@ dmypy.json
 
 # vscode project settings folder
 .vscode
+
+# stats pictures
+*.png
