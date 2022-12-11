@@ -1,6 +1,6 @@
 services:
   poller_bot:
-    # image: skaborik/poller_bot:1.0.0
+    # image: skaborik/poller_bot:1.1.0
     build:
       context: ./
       dockerfile: Dockerfile
