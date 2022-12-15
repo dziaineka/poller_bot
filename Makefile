@@ -7,3 +7,6 @@ build:
 
 push:
 	@docker push ${IMG}
+
+up:
+	@docker compose up --build
