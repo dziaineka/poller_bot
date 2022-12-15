@@ -133,3 +133,6 @@ dmypy.json
 
 # stats pictures
 *.png
+
+# fly.io config
+fly.toml
