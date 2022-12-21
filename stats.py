@@ -121,6 +121,7 @@ class Stats:
 
     def create_graphs(self, stats: dict) -> Tuple[str, str]:
         averages = {}
+        averages_values = []
         highest_indices = {}
         window = 3
         main_graph_path = "zdrada.png"
@@ -129,9 +130,10 @@ class Stats:
         for answer in config.ANSWERS:
             average = get_avg(stats["options"]["option_ratio"][answer], window)
             averages.update({answer: average})
+            averages_values.append(average)
             highest_indices.update({answer: get_peaks(average)})
 
-        y = np.vstack(list(averages.values()))
+        y = np.vstack(averages_values)
 
         fig, ax = plt.subplots(figsize=(10, 3))
         ax.stackplot(stats["date"], y)
@@ -140,13 +142,13 @@ class Stats:
         x_points = []
         y_points = []
 
-        for option in highest_indices:
-            for idx in highest_indices[option]:
+        for answer in config.ANSWERS:
+            for idx in highest_indices[answer]:
                 d = stats["date"][idx]
                 d_str = f"{d.month}-{d.day}"
-                v = 1.0 - averages[option][idx]
+                v = 1.0 - averages[answer][idx]
                 ax.annotate(
-                    "%s(%s): %.2f" % (option[0], d_str, v),
+                    "%s(%s): %.2f" % (answer[0], d_str, v),
                     xy=(d, v),
                     fontsize=6,
                 )
