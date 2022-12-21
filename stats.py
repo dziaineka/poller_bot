@@ -75,6 +75,23 @@ def get_peaks(series):
     return find_peaks(series, height=0.45, distance=30)[0]
 
 
+def get_peak_position(
+    point_answer: str, idx: int, averages: dict
+) -> float:
+    if point_answer == config.ANSWERS[-1]:
+        return 1.0 - averages[point_answer][idx]
+
+    value = 0
+
+    for answer in config.ANSWERS:
+        value += averages[answer][idx]
+
+        if point_answer == answer:
+            return value
+
+    return value
+
+
 def get_empty_stats() -> dict:
     options = {
         "option_count": defaultdict(list),
@@ -144,16 +161,17 @@ class Stats:
 
         for answer in config.ANSWERS:
             for idx in highest_indices[answer]:
-                d = stats["date"][idx]
-                d_str = f"{d.month}-{d.day}"
-                v = 1.0 - averages[answer][idx]
+                date = stats["date"][idx]
+                date_str = f"{date.month}-{date.day}"
+                value_str = averages[answer][idx]
+                value = get_peak_position(answer, idx, averages)
                 ax.annotate(
-                    "%s(%s): %.2f" % (answer[0], d_str, v),
-                    xy=(d, v),
+                    "%s(%s): %.2f" % (answer[0], date_str, value_str),
+                    xy=(date, value),
                     fontsize=6,
                 )
-                x_points.append(d)
-                y_points.append(v)
+                x_points.append(date)
+                y_points.append(value)
 
         plt.plot(x_points, y_points, "o", markersize=1)
         plt.savefig(main_graph_path, dpi=200)
