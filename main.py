@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Awaitable, Callable, Optional
 from zoneinfo import ZoneInfo
 
-import aioschedule as schedule
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from aiogram import Bot, Dispatcher, F, types
 from aiogram.enums import ContentType
 from aiogram.filters import Command
@@ -24,6 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger("poller_bot")
 
 bot = Bot(token=config.BOT_TOKEN)
+scheduler = AsyncIOScheduler(timezone=config.TIMEZONE)
 
 storage = MemoryStorage()
 dp = Dispatcher(storage=storage)
@@ -238,43 +239,37 @@ async def get_last_channel_post() -> Optional[int]:
     return None
 
 
-async def run_pending_jobs():
-    jobs = [
-        asyncio.create_task(job.run())
-        for job in schedule.jobs
-        if job.should_run
-    ]
-
-    if not jobs:
-        return
-
-    done, _ = await asyncio.wait(jobs)
-
-    for task in done:
-        exception = task.exception()
-        if exception:
-            logger.exception("Scheduled job failed.", exc_info=exception)
+def parse_schedule_time(value: str) -> tuple[int, int]:
+    hour, minute = value.split(":")
+    return int(hour), int(minute)
 
 
 async def start_scheduler():
     logger.info("Scheduler started")
 
     for action_time in config.NEW_POLL_TIMES:
-        schedule.every().day.at(action_time).do(post_poll)
+        if not action_time:
+            continue
+
+        hour, minute = parse_schedule_time(action_time)
+        scheduler.add_job(post_poll, "cron", hour=hour, minute=minute)
 
     for repeat_time in config.REPEAT_POLL_TIMES:
-        schedule.every().day.at(repeat_time).do(repeat_poll)
+        if not repeat_time:
+            continue
+
+        hour, minute = parse_schedule_time(repeat_time)
+        scheduler.add_job(repeat_poll, "cron", hour=hour, minute=minute)
 
     if config.STATS_ENABLED:
-        schedule.every().day.at(config.STATS_CHECK_TIME).do(maybe_post_stats)
+        hour, minute = parse_schedule_time(config.STATS_CHECK_TIME)
+        scheduler.add_job(maybe_post_stats, "cron", hour=hour, minute=minute)
 
-    while True:
-        await run_pending_jobs()
-        await asyncio.sleep(1)
+    scheduler.start()
 
 
 async def startup():
-    asyncio.create_task(start_scheduler())
+    await start_scheduler()
 
 
 async def main():

@@ -1,4 +1,4 @@
-aioschedule==0.5.2
+APScheduler==3.11.2
 aiogram==3.28.2
 python-dotenv==1.2.2
 telethon==1.43.2
