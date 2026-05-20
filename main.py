@@ -61,8 +61,8 @@ async def welcome(message: types.Message):
     )
 
     text = (
-        "Привет, этот бот создает опрос по расписанию.\n\n"
-        "Чтобы завести себе такого же, нужно поднять собственную копию бота."
+        "Прывітанне, гэты бот стварае апытанне па раскладзе.\n\n"
+        "Каб завесці сабе такога ж, трэба задэплоіць уласную копію бота."
     )
 
     keyboard = types.InlineKeyboardMarkup(row_width=1)
@@ -82,8 +82,8 @@ async def set_message_to_repeat(message: types.Message):
         return
 
     text = (
-        f"Чтобы этот пост был показан в следующий раз по расписанию "
-        f"нужно запинить его в канале {config.CHANNEL_NAME}."
+        f"Каб гэты допіс быў паказаны наступным разам па раскладзе, "
+        f"трэба замацаваць яго ў канале {config.CHANNEL_NAME}."
     )
 
     await bot.send_message(message.chat.id, text)
@@ -185,8 +185,8 @@ async def repeat_poll():
         logger.debug(f"Can't find pinned post. Id - {last_channel_poll}")
 
         text = (
-            f"Не смог найти в канале {config.CHANNEL_NAME} запиненное "
-            "сообщение, чтобы отфорвардить 🤷‍♂️"
+            f"Не змог знайсці ў канале {config.CHANNEL_NAME} замацаванае "
+            "паведамленне, каб пераслаць яго 🤷‍♂️"
         )
 
         for admin in config.ADMINS:
