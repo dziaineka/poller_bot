@@ -6,10 +6,11 @@ from typing import List, Optional, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.signal import find_peaks
+from aiogram import Bot
 from telethon import TelegramClient
 from telethon.sessions import StringSession
 from telethon.tl import types as teletypes
-import aiogram
+from aiogram.types import FSInputFile
 
 import config
 
@@ -114,27 +115,25 @@ class Stats:
         month = datetime.datetime.today().month
         return (day, month) in config.STATS_POST_DATES
 
-    async def post(self, bot: aiogram.Bot):
+    async def post(self, bot: Bot):
         logger.info("Time to post stats")
         year_ago = datetime.datetime.now() - datetime.timedelta(days=365)
         stats = await self.get_stats(year_ago)
         (main_graph_path, total_voters_graph_path) = self.create_graphs(stats)
 
-        with open(main_graph_path, "rb") as graph:
-            await bot.send_photo(
-                chat_id=config.GROUP_NAME,
-                photo=graph,
-                disable_notification=True,
-                caption="агульны графік"
-            )
+        await bot.send_photo(
+            chat_id=config.GROUP_NAME,
+            photo=FSInputFile(main_graph_path),
+            disable_notification=True,
+            caption="агульны графік",
+        )
 
-        with open(total_voters_graph_path, "rb") as graph:
-            await bot.send_photo(
-                chat_id=config.GROUP_NAME,
-                photo=graph,
-                disable_notification=True,
-                caption="колькасць галасуючых"
-            )
+        await bot.send_photo(
+            chat_id=config.GROUP_NAME,
+            photo=FSInputFile(total_voters_graph_path),
+            disable_notification=True,
+            caption="колькасць галасуючых",
+        )
 
     def create_graphs(self, stats: dict) -> Tuple[str, str]:
         averages = {}
@@ -173,13 +172,15 @@ class Stats:
                 x_points.append(date)
                 y_points.append(value)
 
-        plt.plot(x_points, y_points, "o", markersize=1)
-        plt.savefig(main_graph_path, dpi=200)
+        ax.plot(x_points, y_points, "o", markersize=1)
+        fig.savefig(main_graph_path, dpi=200)
+        plt.close(fig)
 
-        fig.clear()
         avg_voters = get_avg(stats["total"], window)
-        plt.plot(stats["date"], avg_voters)
-        plt.savefig(total_voters_path, dpi=200)
+        total_fig, total_ax = plt.subplots(figsize=(10, 3))
+        total_ax.plot(stats["date"], avg_voters)
+        total_fig.savefig(total_voters_path, dpi=200)
+        plt.close(total_fig)
 
         return main_graph_path, total_voters_path
 

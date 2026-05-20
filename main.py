@@ -3,13 +3,14 @@ import functools
 import logging
 import sys
 from datetime import datetime
-from typing import Callable, Optional
+from typing import Awaitable, Callable, Optional
+from zoneinfo import ZoneInfo
 
 import aioschedule as schedule
-import pytz
-from aiogram import Bot, Dispatcher, types
-from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from aiogram.utils import executor
+from aiogram import Bot, Dispatcher, F, types
+from aiogram.enums import ContentType
+from aiogram.filters import Command
+from aiogram.fsm.storage.memory import MemoryStorage
 
 import config
 from stats import Stats
@@ -20,19 +21,19 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
 )
 
-logger = logging.getLogger("parkun_bot")
+logger = logging.getLogger("poller_bot")
 
 bot = Bot(token=config.BOT_TOKEN)
 
 storage = MemoryStorage()
-dp = Dispatcher(bot, storage=storage)
+dp = Dispatcher(storage=storage)
 
 # Allow bot to forward poll without counting threshold
 # (because counter resets at restart)
 messages_after_last_poll_counter = config.GROUP_MESSAGES_COUNT_THRESHOLD
 
 
-@dp.message_handler(commands=["stats"])
+@dp.message(Command("stats"))
 async def cmd_post_stats(message: types.Message):
     logger.info(
         "Post stats command - "
@@ -43,7 +44,7 @@ async def cmd_post_stats(message: types.Message):
     tasks.append(asyncio.create_task(Stats().post(bot)))
 
 
-@dp.message_handler(commands=["force"])
+@dp.message(Command("force"))
 async def cmd_force_poll(message: types.Message):
     logger.info(
         "Forced polling - "
@@ -75,7 +76,20 @@ async def welcome(message: types.Message):
     await bot.send_message(message.chat.id, text, reply_markup=keyboard)
 
 
-@dp.message_handler(content_types=types.ContentTypes.ANY, state="*")
+@dp.message(F.content_type == ContentType.POLL)
+async def set_message_to_repeat(message: types.Message):
+    if str(message.from_user.id) not in config.ADMINS:
+        return
+
+    text = (
+        f"Чтобы этот пост был показан в следующий раз по расписанию "
+        f"нужно запинить его в канале {config.CHANNEL_NAME}."
+    )
+
+    await bot.send_message(message.chat.id, text)
+
+
+@dp.message()
 async def any_message(message: types.Message):
     logger.debug(f"Message from chat {message.chat.username}")
 
@@ -91,22 +105,8 @@ async def any_message(message: types.Message):
     await welcome(message)
 
 
-@dp.message_handler(content_types=types.ContentTypes.POLL, state="*")
-async def set_message_to_repeat(message: types.Message):
-    if str(message.from_user.id) not in config.ADMINS:
-        return
-
-    text = (
-        f"Чтобы этот пост был показан в следующий раз по расписанию "
-        f"нужно запинить его в канале {config.CHANNEL_NAME}."
-    )
-
-    await bot.send_message(message.chat.id, text)
-
-
 def get_today() -> str:
-    tz_minsk = pytz.timezone(config.TIMEZONE)
-    current_datetime = datetime.now(tz_minsk)
+    current_datetime = datetime.now(ZoneInfo(config.TIMEZONE))
     day = str(current_datetime.day).rjust(2, "0")
     month = str(current_datetime.month).rjust(2, "0")
     year = str(current_datetime.year)
@@ -114,7 +114,7 @@ def get_today() -> str:
     return f"{day}.{month}.{year}"
 
 
-def safe(func: Callable):
+def safe(func: Callable[[], Awaitable[None]]) -> Callable[[], Awaitable[None]]:
     @functools.wraps(func)
     async def log_exception():
         try:
@@ -255,9 +255,15 @@ async def start_scheduler():
         await asyncio.sleep(1)
 
 
-async def startup(_):
+async def startup():
     asyncio.create_task(start_scheduler())
 
 
+async def main():
+    await bot.delete_webhook(drop_pending_updates=True)
+    await startup()
+    await dp.start_polling(bot)
+
+
 if __name__ == "__main__":
-    executor.start_polling(dp, skip_updates=True, on_startup=startup)
+    asyncio.run(main())
