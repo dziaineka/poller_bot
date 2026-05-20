@@ -238,6 +238,24 @@ async def get_last_channel_post() -> Optional[int]:
     return None
 
 
+async def run_pending_jobs():
+    jobs = [
+        asyncio.create_task(job.run())
+        for job in schedule.jobs
+        if job.should_run
+    ]
+
+    if not jobs:
+        return
+
+    done, _ = await asyncio.wait(jobs)
+
+    for task in done:
+        exception = task.exception()
+        if exception:
+            logger.exception("Scheduled job failed.", exc_info=exception)
+
+
 async def start_scheduler():
     logger.info("Scheduler started")
 
@@ -251,7 +269,7 @@ async def start_scheduler():
         schedule.every().day.at(config.STATS_CHECK_TIME).do(maybe_post_stats)
 
     while True:
-        await schedule.run_pending()
+        await run_pending_jobs()
         await asyncio.sleep(1)
 
 
