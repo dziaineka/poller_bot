@@ -17,5 +17,5 @@ Telegram bot to post poll in accordance with schedule
 ## How to run container
 
 ```sh
-docker run --detach --restart=always --env ADMINS="11111111;;22222222" --env QUESTION="Хто перамагае?" --env ANSWERS="Перамога;;Зрада;;Хаацичэски" --env BOT_TOKEN="telegram_bot_token" --env CHANNEL_NAME="@some_tg_channel" --env GROUP_NAME="@some_tg_group" --env POLL_TIMES="13:12;;13:13;;19:00;;20:00;;21:00" --env TIMEZONE="Europe/Minsk" --name poller_bot docker.io/skaborik/poller_bot:1.1.0
+docker run --detach --restart=always --env ADMINS="11111111;;22222222" --env QUESTION="Хто перамагае?" --env ANSWERS="Перамога;;Зрада;;Хаацичэски" --env BOT_TOKEN="telegram_bot_token" --env CHANNEL_NAME="@some_tg_channel" --env GROUP_NAME="@some_tg_group" --env POLL_TIMES="13:12;;13:13;;19:00;;20:00;;21:00" --env TIMEZONE="Europe/Minsk" --name poller_bot docker.io/skaborik/poller_bot:1.3.0
 ```
