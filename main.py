@@ -169,10 +169,14 @@ async def maybe_unpin_previous_poll():
 
     try:
         await bot.unpin_chat_message(
-            chat_id=config.CHANNEL_NAME, message_id=last_channel_poll
+            chat_id=config.CHANNEL_NAME,
+            message_id=last_channel_poll.message_id if last_channel_poll else None,
         )
 
-        logger.debug(f"Post unpinned. Id - {last_channel_poll}")
+        logger.debug(
+            f"Post unpinned. Id - "
+            f"{last_channel_poll.message_id if last_channel_poll else None}"
+        )
     except Exception:
         logger.exception("Unpin failed this time.")
 
@@ -195,6 +199,15 @@ async def repeat_poll():
 
         return
 
+    if not is_today_poll(last_channel_poll):
+        logger.warning(
+            "Pinned post is not today's poll. "
+            f"Id - {last_channel_poll.message_id}. "
+            f"Question - {last_channel_poll.poll.question if last_channel_poll.poll else None}"
+        )
+
+        return
+
     global messages_after_last_poll_counter
 
     forwarding_allowed = (
@@ -211,13 +224,13 @@ async def repeat_poll():
         await bot.forward_message(
             chat_id=config.GROUP_NAME,
             from_chat_id=config.CHANNEL_NAME,
-            message_id=last_channel_poll,
+            message_id=last_channel_poll.message_id,
             disable_notification=False,
         )
 
         messages_after_last_poll_counter = 0
 
-        logger.debug(f"Post forwarded. Id - {last_channel_poll}")
+        logger.debug(f"Post forwarded. Id - {last_channel_poll.message_id}")
 
 
 @safe
@@ -230,11 +243,17 @@ async def maybe_post_stats():
         await Stats().post(bot)
 
 
-async def get_last_channel_post() -> Optional[int]:
+def is_today_poll(message: types.Message) -> bool:
+    expected_question = f"{config.QUESTION} ({get_today()})"
+
+    return bool(message.poll and message.poll.question == expected_question)
+
+
+async def get_last_channel_post() -> Optional[types.Message]:
     chat_info = await bot.get_chat(config.CHANNEL_NAME)
 
     if chat_info.pinned_message:
-        return chat_info.pinned_message.message_id
+        return chat_info.pinned_message
 
     return None
 
