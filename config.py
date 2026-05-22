@@ -65,13 +65,13 @@ GROUP_NAME = getenv("GROUP_NAME", "")
 QUESTION = getenv("QUESTION")
 ANSWERS = getenv("ANSWERS", "").split(";;")
 
-# Times to post new poll (UTC)
+# Times to post new poll in TIMEZONE
 NEW_POLL_TIMES = getenv("NEW_POLL_TIMES", "").split(";;")
 
-# Times to repeat poll which was postes according to previous setting (UTC)
+# Times to repeat poll which was postes according to previous setting in TIMEZONE
 REPEAT_POLL_TIMES = getenv("REPEAT_POLL_TIMES", "").split(";;")
 
-# Timezone name for bot to determine date for poll title.
+# Timezone name for poll title and scheduled posting times.
 TIMEZONE = getenv("TIMEZONE") or "Europe/Minsk"
 
 # Amount of messages in group after previous poll which make bot to be

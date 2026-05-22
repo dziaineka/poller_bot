@@ -129,6 +129,15 @@ def safe(func: Callable[[], Awaitable[None]]) -> Callable[[], Awaitable[None]]:
 @safe
 async def post_poll():
     logger.info("New poll time")
+    last_channel_poll = await get_last_channel_post()
+
+    if last_channel_poll and is_today_poll(last_channel_poll):
+        logger.info(
+            "Today's poll is already pinned. "
+            f"Id - {last_channel_poll.message_id}"
+        )
+        return
+
     question = f"{config.QUESTION} ({get_today()})"
 
     await maybe_unpin_previous_poll()
@@ -205,6 +214,8 @@ async def repeat_poll():
             f"Id - {last_channel_poll.message_id}. "
             f"Question - {last_channel_poll.poll.question if last_channel_poll.poll else None}"
         )
+
+        await post_poll()
 
         return
 
