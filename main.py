@@ -198,13 +198,7 @@ async def repeat_poll():
     if not last_channel_poll:
         logger.debug(f"Can't find pinned post. Id - {last_channel_poll}")
 
-        text = (
-            f"Не змог знайсці ў канале {config.CHANNEL_NAME} замацаванае "
-            "паведамленне, каб пераслаць яго 🤷‍♂️"
-        )
-
-        for admin in config.ADMINS:
-            await bot.send_message(admin, text)
+        await post_poll()
 
         return
 
@@ -244,6 +238,21 @@ async def repeat_poll():
         logger.debug(f"Post forwarded. Id - {last_channel_poll.message_id}")
 
 
+async def ensure_today_poll():
+    last_channel_poll = await get_last_channel_post()
+
+    if not last_channel_poll or not is_today_poll(last_channel_poll):
+        logger.info("Today's poll is missing or stale. Creating a new poll.")
+        await post_poll()
+        return
+
+    logger.info(
+        "Today's poll is already pinned. "
+        f"Id - {last_channel_poll.message_id}. Checking whether to repeat."
+    )
+    await repeat_poll()
+
+
 @safe
 async def maybe_post_stats():
     if Stats.time_to_post():
@@ -274,22 +283,21 @@ def parse_schedule_time(value: str) -> tuple[int, int]:
     return int(hour), int(minute)
 
 
+def get_scheduled_poll_times() -> list[tuple[int, int]]:
+    unique_times = {
+        parse_schedule_time(poll_time)
+        for poll_time in config.POLL_TIMES
+        if poll_time
+    }
+
+    return sorted(unique_times)
+
+
 async def start_scheduler():
     logger.info("Scheduler started")
 
-    for action_time in config.NEW_POLL_TIMES:
-        if not action_time:
-            continue
-
-        hour, minute = parse_schedule_time(action_time)
-        scheduler.add_job(post_poll, "cron", hour=hour, minute=minute)
-
-    for repeat_time in config.REPEAT_POLL_TIMES:
-        if not repeat_time:
-            continue
-
-        hour, minute = parse_schedule_time(repeat_time)
-        scheduler.add_job(repeat_poll, "cron", hour=hour, minute=minute)
+    for hour, minute in get_scheduled_poll_times():
+        scheduler.add_job(ensure_today_poll, "cron", hour=hour, minute=minute)
 
     if config.STATS_ENABLED:
         hour, minute = parse_schedule_time(config.STATS_CHECK_TIME)

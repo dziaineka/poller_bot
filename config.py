@@ -1,7 +1,7 @@
 import logging
 from os import getenv
 from os.path import dirname, join
-from typing import List, Optional, Tuple
+from typing import Optional, Tuple
 
 from dotenv import load_dotenv
 
@@ -65,11 +65,8 @@ GROUP_NAME = getenv("GROUP_NAME", "")
 QUESTION = getenv("QUESTION")
 ANSWERS = getenv("ANSWERS", "").split(";;")
 
-# Times to post new poll in TIMEZONE
-NEW_POLL_TIMES = getenv("NEW_POLL_TIMES", "").split(";;")
-
-# Times to repeat poll which was postes according to previous setting in TIMEZONE
-REPEAT_POLL_TIMES = getenv("REPEAT_POLL_TIMES", "").split(";;")
+# Times to ensure today's poll is posted in TIMEZONE.
+POLL_TIMES = getenv("POLL_TIMES", "").split(";;")
 
 # Timezone name for poll title and scheduled posting times.
 TIMEZONE = getenv("TIMEZONE") or "Europe/Minsk"
